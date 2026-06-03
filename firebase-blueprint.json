@@ -1,0 +1,28 @@
+{
+  "entities": {
+    "session": {
+      "title": "Training Session",
+      "description": "Records of a training roleplay session",
+      "type": "object",
+      "properties": {
+        "empId": { "type": "string", "description": "Employee ID of the advocate" },
+        "location": { "type": "string", "description": "Location code" },
+        "scenarioId": { "type": "string", "description": "ID of the scenario" },
+        "scenarioName": { "type": "string", "description": "Name of the scenario" },
+        "transcript": { "type": "array", "description": "Full conversation transcript" },
+        "scores": { "type": "object", "description": "Scores for each criteria" },
+        "summary": { "type": "string", "description": "AI feedback summary" },
+        "rating": { "type": "integer", "description": "Overall score percentage" },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Timestamp of session completion" },
+        "userId": { "type": "string", "description": "Firebase Auth UID" }
+      },
+      "required": ["empId", "scenarioId", "rating", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/sessions/{sessionId}": {
+      "schema": "session",
+      "description": "Global collection of all training sessions"
+    }
+  }
+}

@@ -1,0 +1,48 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Default deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Helper functions
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    // Session validation
+    function isValidSession(data) {
+      return data.keys().hasAll(['empId', 'scenarioId', 'rating', 'createdAt']) &&
+             data.empId is string && data.empId.size() <= 100 &&
+             data.scenarioId is string && data.scenarioId.size() <= 100 &&
+             data.rating is int && data.rating >= 0 && data.rating <= 100 &&
+             data.createdAt is string &&
+             (data.get('userId', null) == null || data.userId == request.auth.uid);
+    }
+
+    match /sessions/{sessionId} {
+      // Any signed in user can read sessions (Manager dashboard needs to see everything)
+      // In a real app we might restrict this further to specific roles.
+      allow read: if isSignedIn();
+      
+      // Advocates can create their own sessions
+      allow create: if isSignedIn() && isValidSession(incoming());
+      
+      // Sessions are generally immutable once created here
+      allow update, delete: if false;
+    }
+  }
+}

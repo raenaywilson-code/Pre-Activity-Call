@@ -1,0 +1,10 @@
+{
+  "name": "Remix: Carvana Pre-Call Simulator",
+  "description": "AI-powered roleplay simulator for Carvana Advocates to practice pre-delivery customer calls.",
+  "requestFramePermissions": [
+    "microphone"
+  ],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
