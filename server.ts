@@ -12,24 +12,32 @@ async function startServer() {
   const app = express();
   app.use(express.json());
 
-  // Initialize Gemini
-  const apiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
-  console.log("Initializing Gemini Client. Key present:", !!apiKey, "Source:", process.env.GEMINI_API_KEY ? "GEMINI_API_KEY" : (process.env.GOOGLE_API_KEY ? "GOOGLE_API_KEY" : "NONE"));
-  
-  const ai = new GoogleGenAI({
-    apiKey: apiKey || "", 
-    httpOptions: {
-      headers: {
-        'User-Agent': 'aistudio-build',
+  // Helper to lazily initialize & retrieve Gemini Client
+  let aiClient: GoogleGenAI | null = null;
+  function getGeminiClient(): GoogleGenAI {
+    if (!aiClient) {
+      const apiKeyVal = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
+      if (!apiKeyVal) {
+        throw new Error("GEMINI_API_KEY or GOOGLE_API_KEY environment variable is required to execute AI features.");
       }
+      aiClient = new GoogleGenAI({
+        apiKey: apiKeyVal, 
+        httpOptions: {
+          headers: {
+            'User-Agent': 'aistudio-build',
+          }
+        }
+      });
     }
-  });
+    return aiClient;
+  }
 
   // API Routes
   app.get("/api/health", (req, res) => {
+    const key = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
     res.json({ 
       status: "ok", 
-      apiKeyPresent: !!apiKey,
+      apiKeyPresent: !!key,
       keySource: process.env.GEMINI_API_KEY ? "GEMINI_API_KEY" : (process.env.GOOGLE_API_KEY ? "GOOGLE_API_KEY" : "NONE"),
       env: process.env.NODE_ENV
     });
@@ -63,8 +71,9 @@ async function startServer() {
       // Log environment for debugging (safely)
       console.log("Evaluation request for:", scenario.name, "Key Source:", process.env.GEMINI_API_KEY ? "GEMINI_API_KEY" : "GOOGLE_API_KEY");
       
+      const ai = getGeminiClient();
       const response = await ai.models.generateContent({
-        model: "gemini-3-flash-preview", 
+        model: "gemini-3.5-flash", 
         contents: prompt,
         config: { 
           responseMimeType: "application/json" 
@@ -117,6 +126,7 @@ async function startServer() {
           console.log("Setting up Gemini Live session for scenario:", msg.scenario?.name);
           try {
             console.log("Connecting to Gemini Live with model: gemini-3.1-flash-live-preview");
+            const ai = getGeminiClient();
             session = await ai.live.connect({
               model: "gemini-3.1-flash-live-preview",
               config: {
